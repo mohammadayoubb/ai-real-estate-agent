@@ -82,7 +82,7 @@ if predict_clicked:
         with st.spinner("Analyzing property and generating prediction..."):
             try:
                 response = requests.post(
-                    "http://127.0.0.1:8000/predict",
+                    "https://ai-real-estate-agent-937b.onrender.com/predict",
                     json={"query": user_input},
                     timeout=60
                 )
