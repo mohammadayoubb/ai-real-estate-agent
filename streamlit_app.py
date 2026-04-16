@@ -46,7 +46,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🏠 AI Real Estate Price Predictor</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🏠 EstateAI</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="sub-text">Describe a property in natural language and get extracted features, a predicted price, and an AI explanation.</div>',
     unsafe_allow_html=True
@@ -59,6 +59,8 @@ with st.expander("Example input"):
         "quality rating of 8, includes a 2-car garage, and sits on a 9500 square foot lot. "
         "It was built in 2015 and is located in the desirable NridgHt neighborhood."
     )
+
+    
 
 user_input = st.text_area(
     "House Description",
