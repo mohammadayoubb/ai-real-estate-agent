@@ -3,7 +3,7 @@ import requests
 import json
 
 st.set_page_config(
-    page_title="AI Real Estate Price Predictor",
+    page_title="EstateAI",
     page_icon="🏠",
     layout="centered"
 )
