@@ -1,5 +1,7 @@
 import json
-from interpreter import interpret_prediction
+
+from app.services.interpreter import interpret_prediction
+
 
 features = {
     "gr_liv_area": 2500.0,
@@ -11,7 +13,7 @@ features = {
     "year_built": 2012,
     "lot_area": 9000.0,
     "house_style": "2Story",
-    "totrms_abvgrd": 8
+    "totrms_abvgrd": 8,
 }
 
 predicted_price = 272757.14

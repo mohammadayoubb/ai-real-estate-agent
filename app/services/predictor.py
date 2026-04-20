@@ -1,16 +1,16 @@
-import joblib
-import pandas as pd
-from pathlib import Path
 import sys
 
+import joblib
 import numpy.core.numeric as np_numeric
 import numpy.random._pickle as np_pickle
+import pandas as pd
 
-BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "best_house_price_model.pkl"
+from app.paths import DATA_DIR
 
 
-    
+MODEL_PATH = DATA_DIR / "best_house_price_model.pkl"
+
+
 def _patch_numpy_bit_generator_loader():
     original_ctor = np_pickle.__bit_generator_ctor
 
@@ -38,7 +38,7 @@ REQUIRED_FIELDS = [
     "year_built",
     "lot_area",
     "house_style",
-    "totrms_abvgrd"
+    "totrms_abvgrd",
 ]
 
 MODEL_COLUMN_MAPPING = {
@@ -51,12 +51,14 @@ MODEL_COLUMN_MAPPING = {
     "year_built": "Year Built",
     "lot_area": "Lot Area",
     "house_style": "House Style",
-    "totrms_abvgrd": "TotRms AbvGrd"
+    "totrms_abvgrd": "TotRms AbvGrd",
 }
+
 
 def can_predict(extracted_data: dict):
     missing_fields = [field for field in REQUIRED_FIELDS if extracted_data.get(field) is None]
     return len(missing_fields) == 0, missing_fields
+
 
 def prepare_model_input(extracted_data: dict):
     model_ready_data = {}
@@ -64,8 +66,7 @@ def prepare_model_input(extracted_data: dict):
     for schema_field, model_column in MODEL_COLUMN_MAPPING.items():
         model_ready_data[model_column] = extracted_data[schema_field]
 
-    input_df = pd.DataFrame([model_ready_data])
-    return input_df
+    return pd.DataFrame([model_ready_data])
 
 
 def _get_model():
@@ -88,6 +89,7 @@ def _get_model():
         )
         raise RuntimeError(model_load_error) from e
 
+
 def predict_price(extracted_data: dict):
     is_ready, missing_fields = can_predict(extracted_data)
 
@@ -95,7 +97,7 @@ def predict_price(extracted_data: dict):
         return {
             "prediction_ready": False,
             "missing_fields": missing_fields,
-            "message": "Cannot run prediction because some required fields are missing."
+            "message": "Cannot run prediction because some required fields are missing.",
         }
 
     try:
@@ -105,12 +107,12 @@ def predict_price(extracted_data: dict):
         return {
             "prediction_ready": True,
             "predicted_price": round(float(prediction), 2),
-            "missing_fields": []
+            "missing_fields": [],
         }
 
     except Exception as e:
         return {
             "prediction_ready": False,
             "error": str(e),
-            "missing_fields": []
+            "missing_fields": [],
         }

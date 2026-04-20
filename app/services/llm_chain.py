@@ -1,11 +1,12 @@
 import json
 import os
 import re
-from pathlib import Path
+
 from pydantic import ValidationError
 
-from prompts import stage1_prompt
-from schemas import ExtractedFeatures
+from app.core.prompts import stage1_prompt
+from app.core.schemas import ExtractedFeatures
+from app.paths import ENV_EXAMPLE_FILE, ENV_FILE
 
 try:
     from openai import OpenAI
@@ -19,7 +20,6 @@ except ImportError:
 
 
 client = None
-BASE_DIR = Path(__file__).resolve().parent
 
 REQUIRED_FIELDS = [
     "gr_liv_area",
@@ -42,8 +42,8 @@ def _get_client():
         raise RuntimeError("Missing dependency: install the `openai` package.")
 
     if load_dotenv is not None:
-        load_dotenv(BASE_DIR / ".env")
-        load_dotenv(BASE_DIR / ".env.example")
+        load_dotenv(ENV_FILE)
+        load_dotenv(ENV_EXAMPLE_FILE)
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -56,8 +56,8 @@ def _get_client():
 
 
 def compute_completeness(data: dict):
-    extracted_fields = [f for f in REQUIRED_FIELDS if data.get(f) is not None]
-    missing_fields = [f for f in REQUIRED_FIELDS if data.get(f) is None]
+    extracted_fields = [field for field in REQUIRED_FIELDS if data.get(field) is not None]
+    missing_fields = [field for field in REQUIRED_FIELDS if data.get(field) is None]
 
     data["extracted_fields"] = extracted_fields
     data["missing_fields"] = missing_fields
@@ -75,68 +75,51 @@ def extract_features_stage1(user_query: str):
             messages=[
                 {
                     "role": "system",
-                    "content": "You extract real estate features into strict JSON only. Return ONLY one JSON object. No markdown, no text."
+                    "content": "You extract real estate features into strict JSON only. Return ONLY one JSON object. No markdown, no text.",
                 },
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": prompt},
             ],
-            temperature=0
+            temperature=0,
         )
 
         raw_output = response.choices[0].message.content.strip()
 
-        # Debug (keep for now)
         print("\n=== RAW LLM OUTPUT ===")
         print(raw_output)
         print("======================\n")
 
-        # Remove markdown (```json)
         cleaned_output = re.sub(r"```json|```", "", raw_output).strip()
-
-        # Extract JSON object
         match = re.search(r"\{.*\}", cleaned_output, re.DOTALL)
 
         if not match:
             return {
                 "error": "No valid JSON object found in LLM output",
                 "raw_output": raw_output,
-                "fallback": True
+                "fallback": True,
             }
 
         json_str = match.group(0)
         parsed_output = json.loads(json_str)
 
-        # Handle list case
         if isinstance(parsed_output, list):
             if len(parsed_output) == 0:
-                return {
-                    "error": "LLM returned empty list",
-                    "fallback": True
-                }
+                return {"error": "LLM returned empty list", "fallback": True}
             parsed_output = parsed_output[0]
 
-        # Validate
         validated = ExtractedFeatures(**parsed_output)
-
-        # Add completeness info
         final_data = compute_completeness(validated.model_dump())
 
         return ExtractedFeatures(**final_data)
 
     except json.JSONDecodeError:
-        return {
-            "error": "Malformed JSON returned by LLM",
-            "fallback": True
-        }
+        return {"error": "Malformed JSON returned by LLM", "fallback": True}
 
     except ValidationError as e:
         return {
             "error": "Schema validation failed",
             "details": e.errors(),
-            "fallback": True
+            "fallback": True,
         }
 
     except Exception as e:
-        return {
-            "error": str(e),
-            "fallback": True
-        }
+        return {"error": str(e), "fallback": True}
